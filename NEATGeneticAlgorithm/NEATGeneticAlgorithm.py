@@ -20,6 +20,12 @@ class Player(object):
         self.vel=7
 
         self.bullets= []
+        self.pointX=self.x
+        self.pointY=self.y
+        self.pointOrigin=self.x
+        self.redRGB=randrange(255)
+        self.greenRGB=randrange(255)
+        self.blueRGB=randrange(255)
         
         self.display=1
         self.originalImage=blueT
@@ -30,7 +36,7 @@ class Player(object):
         if len(self.bullets) < 5:  # This will make sure we cannot exceed 5 bullets on the screen at once
             xorigin=int(self.centerX + math.cos(math.radians(p1.angle)*(self.width + 300 )))
             yorigin=int(self.centerY + math.sin(math.radians(p1.angle)*(self.height + 300 )))
-            self.bullets.append(projectile(xorigin, yorigin, 6, (255,255,255), self.angle)) 
+            self.bullets.append(projectile(xorigin, yorigin, 6, (self.redRGB,self.blueRGB,self.greenRGB), self.angle)) 
 
     def move(self):
         if self.x+5 > self.velX and self.x < winWidth-self.width-self.velX:
