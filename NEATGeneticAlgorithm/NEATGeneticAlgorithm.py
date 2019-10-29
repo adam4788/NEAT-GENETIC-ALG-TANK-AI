@@ -11,11 +11,11 @@ pygame.display.set_caption("NEAT Genetic Algorithm Demo")
 blueT= pygame.image.load('blueT.png')
 
 class Player(object):
-    def __init__(self, x, y, width, height, angle):
+    def __init__(self, x, y, angle):
         self.x = x
         self.y = y
-        self.width =width
-        self.height=height
+        self.width =50
+        self.height=50
         self.angle=angle
         self.vel=7
 
@@ -26,33 +26,49 @@ class Player(object):
         self.redRGB=randrange(255)
         self.greenRGB=randrange(255)
         self.blueRGB=randrange(255)
+        self.color = (self.redRGB, self.greenRGB, self.blueRGB) 
         
         self.display=1
         self.originalImage=blueT
         self.image= self.originalImage
         self.rect = self.image.get_rect()
+        self.hitbox = (self.x , self.y , self.width+2, self.height+2) # NEW
+
+    def polygon(self, win):#its lines now
+        point_list = []
+        ang = math.radians(self.angle) #i * 3.14159 / num_points + counter * 3.14159 / 60
+        x = self.centerX + int(math.cos(ang) )
+        y = self.centerY + int(-math.sin(ang) )
+        point_list.append((x, y))
+        x = self.centerX + int(math.cos(ang-0.1)*500 )
+        y = self.centerY + int(-math.sin(ang-0.1)*500 )
+        point_list.append((x, y))
+        x = self.centerX + int(math.cos(ang+0.1)*500 )
+        y = self.centerY + int(-math.sin(ang+0.1)*500 )
+        point_list.append((x, y))
+        pygame.draw.lines(win, self.color, True, point_list)
 
     def shoot(self):
         if len(self.bullets) < 5:  # This will make sure we cannot exceed 5 bullets on the screen at once
-            xorigin=int(self.centerX + math.cos(math.radians(p1.angle)*(self.width + 300 )))
-            yorigin=int(self.centerY + math.sin(math.radians(p1.angle)*(self.height + 300 )))
-            self.bullets.append(projectile(xorigin, yorigin, 6, (self.redRGB,self.blueRGB,self.greenRGB), self.angle)) 
+            xorigin=int(self.centerX + self.velX*10)
+            yorigin=int(self.centerY + self.velY*10)
+            self.bullets.append(Projectile(xorigin, yorigin, 6, (self.color), self.angle)) 
 
     def move(self):
         if self.x+5 > self.velX and self.x < winWidth-self.width-self.velX:
             self.x += self.velX
         else:
             if self.x > winWidth-self.width-self.velX:
-                self.x += -10
+                self.x += -25
             else:
-                self.x += 10
+                self.x += 25
         if self.y+5 > self.velY and self.y < winHeight-self.height-self.velY:
             self.y += self.velY 
         else:
             if self.y > winHeight-self.height-self.velY:
-                self.y += -10
+                self.y += -25
             else:
-                self.y += 10
+                self.y += 25
        
     def right(self):
         self.angle =(self.angle - 5) % 360
@@ -64,27 +80,29 @@ class Player(object):
         self.updateImg()
         self.move()
 
-
-    def draw(self, win):
+    def draw(self, win):    
         self.centerX=self.x+self.width/2
         self.centerY=self.y+self.height/2
         self.velX=int(self.vel * math.cos(math.radians(self.angle)))
         self.velY=-int(self.vel * math.sin(math.radians(self.angle)))
         win.blit(self.image, (self.x, self.y))
-        for bullet in self.bullets:
-            if bullet.x < winWidth and bullet.x > 0 and bullet.y < winHeight and bullet.y >0:
-                bullet.x += bullet.velX  # Moves the bullet by its vel
-                bullet.y += bullet.velY
-            else:
-                self.bullets.pop(self.bullets.index(bullet))  # This will remove the bullet if it is off the screen
+        self.polygon(win)
+        self.hitbox = (self.x , self.y , self.width+2, self.height+2)
+        pygame.draw.rect(win, (255,0,0), self.hitbox,2) # To draw the hit box around the tanks
         for bullet in self.bullets:
             bullet.draw(win)
+        for bullet in self.bullets:
+            if bullet.x >= winWidth or bullet.x < 0 or bullet.y > winHeight or bullet.y <0:
+                self.bullets.pop(self.bullets.index(bullet))  # This will remove the bullet if it is off the screen
 
     def updateImg(self):
         self.image = rotCenter(self.originalImage,self.angle)
-        
 
-class projectile(object):
+    def hit(self):  # This will display when the enemy is hit
+        self.bullets.clear()
+        print('hit')
+
+class Projectile(object):
     def __init__(self,x,y,radius,color,angle):
         self.x = int(x)
         self.y = int(y)
@@ -97,6 +115,10 @@ class projectile(object):
 
     def draw(self,win):
         pygame.draw.circle(win, self.color, (self.x, self.y), int(self.radius), int(5))
+        self.hitbox = (self.x-self.radius , self.y-self.radius , self.radius*2, self.radius*2) # NEW
+        pygame.draw.rect(win, (255,0,0), self.hitbox,2) # To draw the hit box around the tanks
+        self.x += self.velX  # Moves the bullet by its vel
+        self.y += self.velY
 
 def rotCenter(image, angle):
     """rotate an image while keeping its center and size"""
@@ -109,8 +131,6 @@ def rotCenter(image, angle):
     
 def redrawGameWindow():
     win.fill((0,0,0))
-    for bullet in bullets:
-        bullet.draw(win)
     p1.draw(win)
     for player in players:
         player.draw(win)
@@ -118,15 +138,14 @@ def redrawGameWindow():
     pygame.display.update()
 
 
-p1 =Player(winWidth/2,winHeight/2,50,50,0)
+p1 =Player(winWidth/2,winHeight/2,0)
 players= []
 for x in range(12):
-    players.append(Player((winWidth/4)*(x%4)+75,(winHeight/3)*(x%3)+50,50,50,0))
-    print(players[x].y)
+    players.append(Player((winWidth/4)*(x%4)+75,(winHeight/3)*(x%3)+50,0))
+
 run = True
-bullets= []
 while run:
-    pygame.time.delay(50)
+    pygame.time.delay(40)
     redrawGameWindow()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -152,8 +171,9 @@ while run:
 
     if keys[pygame.K_SPACE]:
             p1.shoot()
+            print(len(players))
     
-    for player in players:
+    for player in players:#random move generator
         randomMove=randrange(3)
         if randomMove==0:
             player.shoot()
@@ -161,8 +181,24 @@ while run:
             player.left()
         if randomMove==2:
             player.right()
-    
 
-    
+        for bullet in p1.bullets:
+            if bullet.y - bullet.radius < player.hitbox[1] + player.hitbox[3] and bullet.y + bullet.radius > player.hitbox[1]: # Checks x coords
+                    if bullet.x + bullet.radius > player.hitbox[0] and bullet.x - bullet.radius < player.hitbox[0] + player.hitbox[2]: # Checks y coords
+                        p1.bullets.pop(p1.bullets.index(bullet)) # removes bullet from p1 bullet list
+                        print(str(p1.color))
+                        player.hit() 
+                        print(str(player.color))
+                        players.pop(players.index(player))
+
+        for bullet in player.bullets:
+            for playerT in players:
+                if bullet.y - bullet.radius < playerT.hitbox[1] + playerT.hitbox[3] and bullet.y + bullet.radius > playerT.hitbox[1]: # Checks x coords
+                        if bullet.x + bullet.radius > playerT.hitbox[0] and bullet.x - bullet.radius < playerT.hitbox[0] + playerT.hitbox[2]: # Checks y coords
+                            player.bullets.remove(bullet) # removes bullet from players[0] bullet list
+                            print(str(player.color))
+                            playerT.hit() 
+                            print(str(playerT.color))
+                            players.pop(players.index(playerT))
 
 pygame.quit()
