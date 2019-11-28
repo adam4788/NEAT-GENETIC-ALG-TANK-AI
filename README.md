@@ -5,3 +5,4 @@ dependency:
 pygame
 neat_python
 
+WHAT YOU ACTUALLY NEED IS THE TankML.py, config-feedforward.txt, and blueT.png inside the NEATGeneticAlgorithm folder. 
